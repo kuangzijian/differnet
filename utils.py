@@ -1,10 +1,61 @@
 import os
 import torch
-from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
 import config as c
 from multi_transform_loader import ImageFolderMultiTransform
+
+import cv2
+import numpy as np
+from datetime import datetime
+
+TRANSFORM_DIR = "./transform/"
+
+def TransformShow(name="img", wait=100):
+    def transform_show(img):
+        # path = "transform/"
+        # now = datetime.now()
+        # dt_string = now.strftime("%d%m%Y%H%M%S")
+        # cv2.imwrite(path + 'all_transform_' + dt_string + '.jpg', np.array(img))
+        # cv2.imshow(name, np.array(img))
+        # cv2.waitKey(wait)
+        return img
+
+    return transform_show
+
+def cropImage():
+    def crop_image(img):
+        x,y,w,h = shrinkEdges(img.size)
+        rs = transforms.functional.crop(img,y,x,h,w)
+
+        if not os.path.exists(TRANSFORM_DIR):
+            os.makedirs(TRANSFORM_DIR)
+
+        now = datetime.now()
+        dt_string = now.strftime("%d%m%Y%H%M%S")
+        # cv2.imwrite(TRANSFORM_DIR + 'transform_' + dt_string + '.jpg', np.array(rs))
+        return rs
+
+    return crop_image
+
+def shrinkEdges(img_size):
+    width, height = img_size
+    shrink_scale_top = c.crop_top
+    shrink_scale_bot = c.crop_bottom
+    shrink_scale_left = c.crop_left
+    shrink_scale_right = c.crop_right
+    left_reduction = shrink_scale_left * width
+    right_reduction = shrink_scale_right * width
+    top_reduction = shrink_scale_top * height
+    bot_reduction = shrink_scale_bot * height
+    new_height = int(height - top_reduction - bot_reduction)
+    new_width = int(width - left_reduction - right_reduction)
+    new_ul_x = int(left_reduction)
+    new_ul_y = int(top_reduction)
+    # print(
+    #    f"shrinking {0, 0, width, height} to {new_ul_x, new_ul_y, new_width, new_height}"
+    # )
+    return new_ul_x, new_ul_y, new_width, new_height
 
 
 def t2np(tensor):
@@ -74,13 +125,13 @@ def load_datasets(dataset_path, class_name, test=False):
 
     augmentative_transforms = []
     if c.transf_rotations:
-        augmentative_transforms += [transforms.RandomRotation(180)]
+        augmentative_transforms += [transforms.RandomRotation(c.rotation_degree)]
     if c.transf_brightness > 0.0 or c.transf_contrast > 0.0 or c.transf_saturation > 0.0:
         augmentative_transforms += [transforms.ColorJitter(brightness=c.transf_brightness, contrast=c.transf_contrast,
                                                            saturation=c.transf_saturation)]
 
-    tfs = [transforms.Resize(c.img_size)] + augmentative_transforms + [transforms.ToTensor(),
-                                                                       transforms.Normalize(c.norm_mean, c.norm_std)]
+    tfs = [cropImage(), transforms.Resize(c.img_size)] \
+          + augmentative_transforms + [ TransformShow("Transformed Image", 10), transforms.ToTensor(), transforms.Normalize(c.norm_mean, c.norm_std)]
 
     transform_train = transforms.Compose(tfs)
 
@@ -117,9 +168,9 @@ def make_dataloaders(trainset, validateset, testset, test=False):
 def preprocess_batch(data):
     '''move data to device and reshape image'''
     inputs, labels = data
-    print(f"begin: size of inputs={inputs.size()}")
+    #print(f"begin: size of inputs={inputs.size()}")
     inputs, labels = inputs.to(c.device), labels.to(c.device)
-    print(f"to: size of inputs={inputs.size()}")
+    #print(f"to: size of inputs={inputs.size()}")
     inputs = inputs.view(-1, *inputs.shape[-3:])
-    print(f"view: size of inputs={inputs.size()}")
+    #print(f"view: size of inputs={inputs.size()}")
     return inputs, labels

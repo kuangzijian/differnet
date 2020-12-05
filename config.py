@@ -7,14 +7,14 @@ save_cropped_image_to = "dataset/zerobox-2010-1/"
 save_original_image_to = "dataset/zerobox-2010-1-original/"
 
 # device settings
-device = 'cpu' # 'cuda' or 'cpu'
+device = 'cuda' # 'cuda' or 'cpu'
 import torch
 torch.cuda.set_device(0)
 
 # data settings
 dataset_path = "dataset"
-class_name = "zerobox-2009-5"
-modelname = "zerobox-2009-5"
+class_name = "zerobox-2010-2-zijian"
+modelname = "zerobox-2010-2-zijian"
 
 img_size = (448, 448)
 img_dims = [3] + list(img_size)
@@ -26,6 +26,12 @@ transf_brightness = 0.0
 transf_contrast = 0.0
 transf_saturation = 0.0
 norm_mean, norm_std = [0.485, 0.456, 0.406], [0.229, 0.224, 0.225]
+
+rotation_degree = 10
+crop_top = 0.05
+crop_left = 0.05
+crop_bottom = 0.1
+crop_right = 0.05
 
 # network hyperparameters
 n_scales = 3 # number of scales at which features are extracted, img_size is the highest - others are //2, //4,...
@@ -45,13 +51,13 @@ batch_size_test = batch_size * n_transforms // n_transforms_test
 
 # total epochs = meta_epochs * sub_epochs
 # evaluation after <sub_epochs> epochs
-meta_epochs = 1
+meta_epochs = 3
 sub_epochs = 8
 
 # output settings
 verbose = True
 grad_map_viz = True
 hide_tqdm_bar = True
-save_model = True
+save_model = False
 
 target_tpr = 0.85

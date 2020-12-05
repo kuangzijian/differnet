@@ -6,10 +6,8 @@ from tqdm import tqdm
 
 import config as c
 from localization import export_gradient_maps
-from model import DifferNet, save_model, save_weights
+from model import DifferNet, save_model, save_weights, save_parameters, save_roc_plot
 from utils import *
-
-import json
 
 class Score_Observer:
     '''Keeps an eye on the current and highest score so far'''
@@ -37,6 +35,9 @@ def train(train_loader, validate_loader):
     model = DifferNet()
     optimizer = torch.optim.Adam(model.nf.parameters(), lr=c.lr_init, betas=(0.8, 0.8), eps=1e-04, weight_decay=1e-5)
     model.to(c.device)
+
+    save_name_pre = '{}_{}_{:.2f}_{:.2f}_{:.2f}_{:.2f}'.format(c.modelname, c.rotation_degree,
+                                               c.crop_top, c.crop_left, c.crop_bottom, c.crop_right)
 
     score_obs = Score_Observer('AUROC')
 
@@ -88,7 +89,8 @@ def train(train_loader, validate_loader):
 
             z_grouped = torch.cat(test_z, dim=0).view(-1, c.n_transforms_test, c.n_feat)
             anomaly_score = t2np(torch.mean(z_grouped ** 2, dim=(-2, -1)))
-            score_obs.update(roc_auc_score(is_anomaly, anomaly_score), epoch,
+            AUROC = roc_auc_score(is_anomaly, anomaly_score)
+            score_obs.update(AUROC, epoch,
                             print_score=c.verbose or epoch == c.meta_epochs - 1)
 
             fpr, tpr, thresholds = roc_curve(is_anomaly, anomaly_score)
@@ -96,9 +98,10 @@ def train(train_loader, validate_loader):
             model_parameters['fpr'] = fpr.tolist()
             model_parameters['tpr'] = tpr.tolist()
             model_parameters['thresholds'] = thresholds.tolist()
+            model_parameters['AUROC'] = AUROC
 
-            with open('models/' + c.modelname + '.json', 'w') as jsonfile:
-                jsonfile.write(json.dumps(model_parameters))
+            save_parameters(model_parameters, save_name_pre + "_{:.4f}".format(AUROC))
+            save_roc_plot(fpr, tpr, save_name_pre + "_{:.4f}".format(AUROC))
 
             if c.verbose:
                 print('Epoch: {:d} \t validate_loss: {:.4f}'.format(epoch, test_loss))
@@ -111,13 +114,13 @@ def train(train_loader, validate_loader):
                 print('tpr:           ', tpr)
                 print('thresholds:    ', thresholds)
 
-#    if c.grad_map_viz and not (validate_loader is None):
-#        export_gradient_maps(model, validate_loader, optimizer, -1)
+    if c.grad_map_viz and not (validate_loader is None):
+        export_gradient_maps(model, validate_loader, optimizer, 1)
 
     if c.save_model:
         model.to('cpu')
-        save_model(model, c.modelname)
-        save_weights(model, c.modelname)
+        save_model(model, save_name_pre + '.pth')
+        save_weights(model, save_name_pre + '.weights.pth')
 
     return model, model_parameters
 
