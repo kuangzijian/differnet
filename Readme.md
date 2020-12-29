@@ -1,12 +1,8 @@
-# DifferNet
+# Computer Vision and Normalizing Flow Based Defect Detection
 
-This is the official repository to the WACV 2021 paper "[Same Same But DifferNet: Semi-Supervised Defect Detection with Normalizing Flows](
-https://arxiv.org/abs/2008.12577)" by Marco Rudolph, Bastian Wandt and Bodo Rosenhahn.
+This is the repository to the paper "[Computer Vision and Normalizing Flow Based Defect Detection](
+https://arxiv.org/abs/2008.12577)" by Zijian Kuang and Xinran Tie.
 
-If the only reason you ended up here is because you made a typo on 'different' - what was our intention - here is a shortened summary: We introduce a method that is able to find anomalies like defects on image data without having some of them in the training set.
-
-
-[![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/same-same-but-differnet-semi-supervised/anomaly-detection-on-mvtec-ad)](https://paperswithcode.com/sota/anomaly-detection-on-mvtec-ad?p=same-same-but-differnet-semi-supervised)
 
 ## Getting Started
 
@@ -105,7 +101,7 @@ Some code of the [FrEIA framework](https://github.com/VLL-HD/FrEIA) was used for
 
 
 ## Citation
-Please cite our paper in your publications if it helps your research. Even if it does not, you are welcome to cite us.
+Original paper and repository that our project and study is based on:
 
     @inproceedings { RudWan2021,
     author = {Marco Rudolph and Bastian Wandt and Bodo Rosenhahn},
@@ -115,10 +111,6 @@ Please cite our paper in your publications if it helps your research. Even if it
     month = jan
     }
     
-Another paper link because you missed the first one:
-
-* [Same Same But DifferNet: Semi-Supervised Defect Detection with Normalizing Flows](
-https://arxiv.org/abs/2008.12577)
 
 ## License
 
