@@ -1,15 +1,9 @@
-import numpy as np
-import torch
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve
 from tqdm import tqdm
-
-import config as c
 from localization import export_gradient_maps
-from model import DifferNet, save_model, save_weights, save_parameters, save_roc_plot, MaskDifferNet
+from model import DifferNet, save_model, save_weights, save_parameters, save_roc_plot
 from utils import *
-from operator import itemgetter
-import cv2
 
 class Score_Observer:
     '''Keeps an eye on the current and highest score so far'''
@@ -32,17 +26,15 @@ class Score_Observer:
         print('{:s}: \t last: {:.4f} \t max: {:.4f} \t epoch_max: {:d}'.format(self.name, self.last, self.max_score,
                                                                                self.max_epoch))
 
-
 def train(train_loader, validate_loader):
-    model = MaskDifferNet()
-    optimizer = torch.optim.Adam([{'params': model.nf.parameters()},
-            {'params': model.vae.parameters()}
-        ], lr=c.lr_init, betas=(0.8, 0.8), eps=1e-04, weight_decay=1e-5)
+    model = DifferNet()
+    optimizer = torch.optim.Adam([{'params': model.nf.parameters()}], lr=c.lr_init, betas=(0.8, 0.8), eps=1e-04,
+                                 weight_decay=1e-5)
     model.to(c.device)
 
     save_name_pre = '{}_{}_{:.2f}_{:.2f}_{:.2f}_{:.2f}'.format(c.modelname, c.rotation_degree,
                                                c.crop_top, c.crop_left, c.crop_bottom, c.crop_right)
-
+    # todo: learning rate
     score_obs = Score_Observer('AUROC')
 
     for epoch in range(c.meta_epochs):
@@ -56,9 +48,6 @@ def train(train_loader, validate_loader):
             for i, data in enumerate(tqdm(train_loader, disable=c.hide_tqdm_bar)):
                 optimizer.zero_grad()
                 inputs, labels = preprocess_batch(data)  # move to device and reshape
-                # TODO inspect
-                # inputs += torch.randn(*inputs.shape).cuda() * c.add_img_noise
-
                 z = model(inputs)
                 loss = get_loss(z, model.nf.jacobian(run_forward=False))
                 train_loss.append(t2np(loss))
@@ -104,8 +93,9 @@ def train(train_loader, validate_loader):
             model_parameters['thresholds'] = thresholds.tolist()
             model_parameters['AUROC'] = AUROC
 
-            save_parameters(model_parameters, save_name_pre + "_{:.4f}".format(AUROC))
-            save_roc_plot(fpr, tpr, save_name_pre + "_{:.4f}".format(AUROC))
+            if epoch == c.meta_epochs - 1:
+                save_parameters(model_parameters, c.modelname)
+                save_roc_plot(fpr, tpr, c.modelname + "_{:.4f}".format(AUROC))
 
             if c.verbose:
                 print('Epoch: {:d} \t validate_loss: {:.4f}'.format(epoch, test_loss))
@@ -123,166 +113,7 @@ def train(train_loader, validate_loader):
 
     if c.save_model:
         model.to('cpu')
-        save_model(model, save_name_pre + '.pth')
-        save_weights(model, save_name_pre + '.weights.pth')
+        save_model(model, c.modelname + '.pth')
+        save_weights(model, c.modelname + '.weights.pth')
 
     return model, model_parameters
-
-def test(model, model_parameters, test_loader):
-    print("Running test")
-    optimizer = torch.optim.Adam(model.nf.parameters(), lr=c.lr_init, betas=(0.8, 0.8), eps=1e-04,
-                                 weight_decay=1e-5)
-    # score_obs = Score_Observer('AUROC')
-    # evaluate
-    model.to(c.device)
-    model.eval()
-    # print(f"model={model}")
-    epoch = 0
-    if c.verbose:
-        print('\nCompute loss and scores on test set:')
-    test_loss = list()
-    test_z = list()
-    test_labels = list()
-    with torch.no_grad():
-        for i, data in enumerate(tqdm(test_loader, disable=c.hide_tqdm_bar)):
-            inputs, labels = preprocess_batch(data)
-            # inputs = Variable(inputs, requires_grad=True)
-            print(f"i={i}: labels={labels}, size of inputs={inputs.size()}")
-            # print(f"inputs={inputs}")
-            z = model(inputs)
-            # print(f"z={z}")
-            loss = get_loss(z, model.nf.jacobian(run_forward=False))
-            test_z.append(z)
-            test_loss.append(t2np(loss))
-            test_labels.append(t2np(labels))
-
-        test_loss = np.mean(np.array(test_loss))
-    if c.verbose:
-        print('Epoch: {:d} \t test_loss: {:.4f}'.format(epoch, test_loss))
-
-    test_labels = np.concatenate(test_labels)
-    is_anomaly = np.array([0 if l == 0 else 1 for l in test_labels])
-
-    z_grouped = torch.cat(test_z, dim=0).view(-1, c.n_transforms_test, c.n_feat)
-    anomaly_score = t2np(torch.mean(z_grouped ** 2, dim=(-2, -1)))
-    # score_obs.update(roc_auc_score(is_anomaly, anomaly_score), epoch,
-    #                 print_score=c.verbose or epoch == c.meta_epochs - 1)
-
-    # get the threshold for target true positive rate
-    for i in range(len(model_parameters['tpr'])):
-        if model_parameters['tpr'][i] > c.target_tpr:
-            target_threshold = model_parameters['thresholds'][i]
-            break
-
-    is_anomaly_detected = np.array([0 if l < target_threshold else 1 for l in anomaly_score])
-
-    # calculate test accuracy
-    error_count = 0
-    for i in range(len(is_anomaly)):
-        if is_anomaly[i] != is_anomaly_detected[i]:
-            error_count += 1
-
-    test_accuracy = 1 - float(error_count) / len(is_anomaly)
-
-    print(f"test_labels={test_labels}, is_anomaly={is_anomaly},anomaly_score={anomaly_score},is_anomaly_detected={is_anomaly_detected}")
-    print(f"target_tpr={c.target_tpr}, target_threshold={target_threshold}, test_accuracy={test_accuracy}")
-
-def predict(model, model_parameters, predict_loader):
-    print("Predicting")
-    optimizer = torch.optim.Adam(model.nf.parameters(), lr=c.lr_init, betas=(0.8, 0.8), eps=1e-04, weight_decay=1e-5)
-    model.to(c.device)
-    model.eval()
-    if c.verbose:
-        print('\nCompute loss and scores on test set:')
-    test_z = list()
-    test_labels = list()
-    predictions = []
-    with torch.no_grad():
-        for i, data in enumerate(predict_loader):
-            inputs, labels = preprocess_batch(data)
-            frame = int(predict_loader.dataset.imgs[i][0].split('frame',1)[1].split('-')[0])
-            print(f"i={i}: frame#={frame}, labels={labels.cpu().numpy()[0]}, size of inputs={inputs.size()}")
-            predictions.append([frame, predict_loader.dataset.imgs[i][0], labels.cpu().numpy()[0], 0, 0])
-            z = model(inputs)
-            test_z.append(z)
-            test_labels.append(t2np(labels))
-
-    test_labels = np.concatenate(test_labels)
-    is_anomaly = np.array([0 if l == 0 else 1 for l in test_labels])
-
-    z_grouped = torch.cat(test_z, dim=0).view(-1, c.n_transforms_test, c.n_feat)
-    anomaly_score = t2np(torch.mean(z_grouped ** 2, dim=(-2, -1)))
-
-    for i in range(len(model_parameters['tpr'])):
-        if model_parameters['tpr'][i] > c.target_tpr:
-            target_threshold = model_parameters['thresholds'][i]
-            break
-
-    is_anomaly_detected = []
-    i = 0
-    for l in anomaly_score:
-        predictions[i][4] = l
-        if l < target_threshold:
-            is_anomaly_detected.append(0)
-            predictions[i][3] = 0
-        else:
-            is_anomaly_detected.append(1)
-            predictions[i][3] = 1
-        i += 1
-    predictions = sorted(predictions, key=itemgetter(0))
-
-    # calculate test accuracy
-    error_count = 0
-    for i in range(len(is_anomaly)):
-        if is_anomaly[i] != is_anomaly_detected[i]:
-            error_count += 1
-
-    test_accuracy = 1 - float(error_count) / len(is_anomaly)
-
-    # print(f"test_labels={test_labels}, is_anomaly={is_anomaly},anomaly_score={anomaly_score},is_anomaly_detected={is_anomaly_detected}")
-    print(f"target_tpr={c.target_tpr}, target_threshold={target_threshold}, test_accuracy={test_accuracy}")
-    if c.grad_map_viz:
-        print("saving gradient maps...")
-        export_gradient_maps(model, predict_loader, optimizer, -1)
-
-    # visualize the prediction result
-    if c.visualization:
-        for i in range(len(predictions)):
-            # load file path
-            file_path = predictions[i][1]
-            idx = file_path.index('video')
-            file_path = file_path[:idx] + 'original-' + file_path[idx:]
-            file_path = file_path.replace("predict\\test", "zerobox-2010-1-original")
-
-            # rotate and resize image
-            img = cv2.imread(file_path)
-            img = cv2.rotate(img, cv2.cv2.ROTATE_90_COUNTERCLOCKWISE)
-            img = cv2.resize(img, (600, 900))
-
-            # display prediction on each frame
-            font = cv2.FONT_HERSHEY_DUPLEX
-            font_size = 0.65
-            pos_x = 330
-            if (predictions[i][3] == 1):
-                img = cv2.putText(img, 'prediction: defective', (pos_x, 810), font,
-                                  font_size, (0, 0, 255), 1, cv2.LINE_AA)
-            else:
-                img = cv2.putText(img, 'prediction: good', (pos_x, 810), font,
-                                  font_size, (0, 255, 0), 1, cv2.LINE_AA)
-
-            if (predictions[i][2] == 1):
-                img = cv2.putText(img, 'ground truth: defective', (pos_x, 830), font,
-                                  font_size, (0, 0, 255), 1, cv2.LINE_AA)
-            else:
-                img = cv2.putText(img, 'ground truth: good', (pos_x, 830), font,
-                                  font_size, (0, 255, 0), 1, cv2.LINE_AA)
-
-            img = cv2.putText(img, 'anomaly score: ' + str(round(predictions[i][4], 4)), (pos_x, 850), font,
-                              font_size, (0, 255, 0), 1, cv2.LINE_AA)
-            img = cv2.putText(img, 'threshold: ' + str(round(target_threshold, 4)), (pos_x, 870), font,
-                              font_size, (0, 255, 0), 1, cv2.LINE_AA)
-            img = cv2.putText(img, 'accuracy: ' + str(round(test_accuracy * 100, 2)) + '%', (pos_x, 890), font,
-                              font_size, (0, 255, 0), 1, cv2.LINE_AA)
-            # show results
-            cv2.imshow('window', img)
-            cv2.waitKey(220)
