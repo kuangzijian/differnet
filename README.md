@@ -42,15 +42,15 @@ Common settings
 Traing
 
 ```
-python run_training.py
+python training.py
 ```
 
-Validate model
+Run test cases
 ```
-python run_test.py
+python  -m pytest -s
 ```
 
-## Prepare Data
+## Prepare new dataset
 The data structure under work folder looks like this. The model folder will save trained model.
 For experiment purpose, you would like to give test and validate folder with proper labled data. While, for zerobox 
 it only requires train folder and data. The minimum images is 16 based on the differnet paper.
