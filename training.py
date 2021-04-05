@@ -28,7 +28,7 @@ def test_train():
     differnetutil.train_model()
 
 
-def test_model(self):
+def test_model():
     """Test training"""
     # load cutomized conf
     conf = DIFFERNET_CONF
@@ -46,7 +46,7 @@ def test_model(self):
     logger.info(f"elapsed time: {elapsed_time}")
 
 
-def test_detect(self):
+def test_detect():
     """Test Detection"""
     # load cutomized conf
     conf = DIFFERNET_CONF
@@ -88,7 +88,7 @@ def test_detect(self):
     assert ret == False
 
 
-if __file__ == "__main__":
-    # test_train()
-    # test_model()
+if __name__ == "__main__":
+    test_train()
+    test_model()
     test_detect()

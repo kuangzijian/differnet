@@ -4,7 +4,7 @@ DIFFERNET_CONF = {
     "device": "cuda",  # cuda or cpu
     "device_id": 5,
     "verbose": True,
-    "meta_epochs": 10,
+    "meta_epochs": 5,
     "sub_epochs": 8,
     "test_anormaly_target": 10,
     # other settings
