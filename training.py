@@ -1,28 +1,94 @@
-'''This is the repo which contains the original code to the WACV 2021 paper
-"Same Same But DifferNet: Semi-Supervised Defect Detection with Normalizing Flows"
-by Marco Rudolph, Bastian Wandt and Bodo Rosenhahn.
-For further information contact Marco Rudolph (rudolph@tnt.uni-hannover.de)'''
-
-from train import *
-from utils import load_datasets, make_dataloaders
 import time
-import gc
+import logging.config
+import cv2
+import os
+from differnet.differnet_util import DiffernetUtil
+import time
+from conf.settings import LOGGING, DIFFERNET_CONF
 
-train_set, validate_set, _ = load_datasets(c.dataset_path, c.class_name)
-train_loader, validate_loader, _ = make_dataloaders(train_set, validate_set, None)
+# import logging
+logging.config.dictConfig(LOGGING)
+logger = logging.getLogger(__name__)
 
-time_start = time.time()
-model, model_parameters = train(train_loader, validate_loader)
+# https://www.django-rest-framework.org/api-guide/testing/#apiclient
 
-time_end = time.time()
-time_c = time_end - time_start  # 运行所花时间
-print("train time cost: {:f} s".format(time_c))
 
-# free memory
-del train_set
-del validate_set
-del train_loader
-del validate_loader
+def test_train():
+    """Test training
+    use nvidia-smi -i 5 -l 5 to monitor GPU
+    -i GPU device number -l interval to refresh
+    """
+    # load cutomized conf
+    conf = DIFFERNET_CONF
+    logger.info(f"working folder: {conf.get('differnet_work_dir')}")
 
-gc.collect()
-torch.cuda.empty_cache()
+    differnetutil = DiffernetUtil(conf, "black1")
+
+    # train the model
+    differnetutil.train_model()
+
+
+def test_model(self):
+    """Test training"""
+    # load cutomized conf
+    conf = DIFFERNET_CONF
+    logger.info(f"working folder: {conf.get('differnet_work_dir')}")
+
+    differnetutil = DiffernetUtil(conf, "black1")
+
+    t1 = time.process_time()
+
+    # test trained model
+    differnetutil.test_model()
+
+    t2 = time.process_time()
+    elapsed_time = t2 - t1
+    logger.info(f"elapsed time: {elapsed_time}")
+
+
+def test_detect(self):
+    """Test Detection"""
+    # load cutomized conf
+    conf = DIFFERNET_CONF
+    logger.info(f"working folder: {conf.get('differnet_work_dir')}")
+
+    t0 = time.process_time()
+    differnetutil = DiffernetUtil(conf, "black1")
+    differnetutil.load_model()
+    t1 = time.process_time()
+
+    elapsed_time = t1 - t0
+    logger.info(f"Model load elapsed time: {elapsed_time}")
+
+    img = cv2.imread(
+        os.path.join(
+            differnetutil.test_dir, "defect", "Camera0_202009142018586_product.png"
+        ),
+        cv2.IMREAD_UNCHANGED,
+    )
+    t1 = time.process_time()
+    ret = differnetutil.detect(img, 10)
+    # calculate time
+    t2 = time.process_time()
+    elapsed_time = t2 - t1
+    logger.info(f"Detection elapsed time: {elapsed_time}")
+    assert ret == True
+
+    img = cv2.imread(
+        os.path.join(
+            differnetutil.test_dir, "good", "Camera0_202009142018133_product.png"
+        ),
+        cv2.IMREAD_UNCHANGED,
+    )
+    t2 = time.process_time()
+    ret = differnetutil.detect(img, 10)
+    t3 = time.process_time()
+    elapsed_time = t3 - t2
+    logger.info(f"Detection elapsed time: {elapsed_time}")
+    assert ret == False
+
+
+if __file__ == "__main__":
+    # test_train()
+    # test_model()
+    test_detect()

@@ -1,7 +1,7 @@
 # DifferNet
-This project is used for experiment to train and test models on variouse datasets. The core function has been packaged as "[differnet-zerobox](https://github.com/zerobox-ai/pydiffernet)". Pleaser refer to the [readme](https://github.com/zerobox-ai/pydiffernet/blob/master/README.md) for how to use the package.
+This project is used for experiment to train and test models on various datasets. The core function has been packaged as "[differnet-zerobox](https://github.com/zerobox-ai/pydiffernet)". Pleaser refer to the [readme](https://github.com/zerobox-ai/pydiffernet/blob/master/README.md) for how to use the package.
 
-If you need more information please reference to the official repository. 
+If you need more information about DifferNet, please reference to the official repository. 
 
 **Differnet Officical repository**
 The [official repository](https://github.com/marco-rudolph/differnet) to the WACV 2021 paper "[Same Same But DifferNet: Semi-Supervised Defect Detection with Normalizing Flows](
@@ -28,6 +28,7 @@ The project can have dict based configuration to overwrite any default value.
 
 Common settings
 ```
+#conf/settings.conf
 "differnet_work_dir": "./work", #work folder
 "device": "cuda",  # cuda or cpu
 "device_id": 0,  # the device you want to use. depends on how many GPU or CPU you have. 

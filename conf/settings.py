@@ -1,8 +1,8 @@
 DIFFERNET_CONF = {
     # common settings
     "differnet_work_dir": "./work",
-    "device": "cpu",  # cuda or cpu
-    "device_id": 0,
+    "device": "cuda",  # cuda or cpu
+    "device_id": 5,
     "verbose": True,
     "meta_epochs": 10,
     "sub_epochs": 8,
