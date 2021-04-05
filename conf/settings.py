@@ -8,7 +8,6 @@ DIFFERNET_CONF = {
     "sub_epochs": 8,
     "test_anormaly_target": 10,
     # other settings
-    # "num_videos": 21,
     # "img_size": [448, 448],
     # "img_dims": [3, 448, 448],
     # "add_img_noise": 0.01,
