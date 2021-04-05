@@ -1,6 +1,4 @@
-# """This file configures the training procedure because handling arguments in every single function is so exhaustive for
-# research purposes. Don't try this code if you are a software engineer."""
-differnet_conf = {
+DIFFERNET_CONF = {
     # common settings
     "differnet_work_dir": "./work",
     "device": "cpu",  # cuda or cpu
@@ -52,4 +50,40 @@ differnet_conf = {
     # "visualization": False,
     # "frame_name_is_given": False,
     # "target_tpr": 0.85,
+}
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "%(levelname)s %(asctime)s %(module)s "
+            "%(process)d %(thread)d %(message)s"
+        }
+    },
+    "handlers": {
+        "console": {
+            # "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        # "file": {
+        #     # 'level': 'DEBUG',
+        #     "class": "logging.handlers.RotatingFileHandler",
+        #     "filename": "logs/app.log",
+        #     "formatter": "verbose",
+        #     "maxBytes": 1024 * 1024 * 1,  # 10MB
+        #     "backupCount": 5,
+        #     "formatter": "verbose",
+        # },
+    },
+    "loggers": {
+        "differnet": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+    },
+    "root": {"level": "INFO", "handlers": ["console"]},
 }

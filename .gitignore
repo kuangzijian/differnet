@@ -6,3 +6,5 @@ gradient_maps/
 models/
 transform/
 weights/
+logs/
+work/

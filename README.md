@@ -50,7 +50,39 @@ python run_test.py
 ```
 
 ## Data
-How to use Data extraction tool to extract data from video clips:
+The data structure under work folder looks like this. The model folder will save trained model.
+For experiment purpose, you would like to give test and validate folder with proper labled data. While, for zerobox 
+it only requires train folder and data. The minimum images is 16 based on the differnet paper.
+
+```
+pink1/
+├── model
+├── test
+│   ├── defect
+│   └── good
+├─── validate
+│    ├── defect
+│    └── good
+└── train
+    └── good
+        ├── 01.jpg
+        ├── 02.jpg
+        ├── 03.jpg
+        ├── 04.jpg
+        ├── 05.jpg
+        ├── 06.jpg
+        ├── 07.jpg
+        ├── 08.jpg
+        ├── 09.jpg
+        ├── 10.jpg
+        ├── 11.jpg
+        ├── 12.jpg
+        ├── 13.jpg
+        ├── 14.jpg
+        ├── 15.jpg
+        └── 16.jpg
+```
+### How to use Data extraction tool to extract data from video clips:
  1. Create folder structure like the example shows in the picture below.
  
   ![1](https://github.com/zerobox-ai/differnet/blob/zijian/dataset/data-generation/annotations/structure1.png)
