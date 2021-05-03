@@ -1,3 +1,7 @@
+This is the repository to the paper "Computer Vision and Normalizing Flow Based Defect Detection" by Zijian Kuang and Xinran Tie.
+![0](https://github.com/kuangzijian/Computer-Vision-and-Normalizing-Flow-Based-Defect-Detection/blob/master/Model_Architecture_Overview.png)
+
+
 # DifferNet
 This project is used for experiment to train and test models on various datasets. The core function has been packaged as "[differnet-zerobox](https://github.com/zerobox-ai/pydiffernet)". Pleaser refer to the [readme](https://github.com/zerobox-ai/pydiffernet/blob/master/README.md) for how to use the package.
 
