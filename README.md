@@ -1,3 +1,10 @@
+# Computer-Vision-and-Normalizing-Flow-Based-Defect-Detection
+
+Source code for the following paper([arXiv link](https://arxiv.org/pdf/2012.06737v1.pdf)):
+
+        Computer Vision and Normalizing Flow Based Defect Detection
+        Zijian Kuang, Xinran Tie
+
 This is the repository to the paper "Computer Vision and Normalizing Flow Based Defect Detection" by Zijian Kuang and Xinran Tie.
 ![0](https://github.com/kuangzijian/Computer-Vision-and-Normalizing-Flow-Based-Defect-Detection/blob/master/Model_Architecture_Overview.png)
 
